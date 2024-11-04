@@ -1,6 +1,6 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loader";
 
@@ -10,17 +10,16 @@ const Pokemons = () => {
   // Fetch basic Pokemon data
   const fetchPokemons = async (page = 0) => {
     const response = await fetch(
-      `https://pokeapi.co/api/v2/pokemon?offset=${page * 20}&limit=20`
+      `https://pokeapi.co/api/v2/pokemon?offset=${page * 40}&limit=40`
     );
     const data = await response.json();
     return data;
   };
 
   // Main Pokemon query to get list of Pokemon names and URLs
-  const { error, data, isPlaceholderData } = useQuery({
+  const { error, data } = useQuery({
     queryKey: ["pokemon", page],
     queryFn: () => fetchPokemons(page),
-    placeholderData: keepPreviousData,
   });
 
   // Fetch sprite for a single Pokemon
@@ -42,7 +41,6 @@ const Pokemons = () => {
       );
       return results;
     },
-    placeholderData: keepPreviousData,
     enabled: !!data && !!data.results,
   });
 
@@ -50,21 +48,31 @@ const Pokemons = () => {
 
   const pokemonWithSprites = pokemonWithSpritesQuery.data;
 
+  useEffect(() => {
+    if (!isPending) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isPending]);
+
   if (error) {
-    return <div>Error loading pokemon: {error.message}</div>;
+    return <div>Error fetching Pokemons: {error.message}</div>;
   }
 
   return (
     <section className="flex flex-col gap-4 place-items-center min-h-screen">
-      <h1 className="font-bold">Pokemons</h1>
-
       {isPending ? (
-        <div className="flex gap-4">
-          <LoadingSpinner />
+        <div className="flex gap-4 my-auto">
+          <img
+            src="./pokemon.svg"
+            className="animate-spin"
+            width={20}
+          />
+          <span>Fetching Pokemons...</span>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-4">
+          <h1 className="font-bold text-center">Pokemons</h1>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {pokemonWithSprites &&
               pokemonWithSprites.map((pokemon, index) => (
                 <Card key={index} className="text-center cursor-pointer">
@@ -74,16 +82,11 @@ const Pokemons = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <img
-                      src={pokemon.sprite}
-                      alt={`${pokemon.name} sprite`}
-                      className="w-20 h-20 mx-auto"
-                    />
+                    <img src={pokemon.sprite} className="w-24 h-24 mx-auto" />
                   </CardContent>
                 </Card>
               ))}
           </div>
-
           <div className="flex flex-col place-items-center gap-4">
             <span>Current Page: {page + 1}</span>
 
@@ -96,23 +99,24 @@ const Pokemons = () => {
               >
                 Previous Page
               </Button>
+
               <Button
                 onClick={() => {
-                  if (!isPlaceholderData && data?.next) {
+                  if (!isPending && data?.next) {
                     setPage((old) => old + 1);
                   }
                 }}
-                disabled={isPlaceholderData || !data?.next}
+                disabled={isPending || !data?.next}
               >
                 Next Page
               </Button>
             </div>
-
             {isFetching ? (
               <span className="flex gap-4">
                 <LoadingSpinner />
               </span>
             ) : null}
+            
           </div>
         </div>
       )}

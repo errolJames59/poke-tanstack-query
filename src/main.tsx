@@ -35,7 +35,7 @@ const route = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
-
+    <ReactQueryDevtools />
     <RouterProvider router={route} />
   </QueryClientProvider>
 );
